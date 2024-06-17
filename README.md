@@ -44,23 +44,22 @@ Este projeto foi desenvolvido como parte da disciplina PMR3402 - Sistemas Embarc
   - supabase
   - python-dotenv
 
-
 ## Como Executar
 
 1. Clone o repositório para sua máquina local:
-   $ sh
-   $ git clone https://github.com/seu-usuario/monitoramento-plantas.git
-   $ cd monitoramento-plantas
+   - $ sh
+   - $ git clone https://github.com/asforaarthur/pmr3402_projeto_planta.git
+   - $ cd monitoramento-plantas
 2. Crie e ative um ambiente virtual:
-   $ python -m venv venv
-   $ venv\Scripts\activate
+   - $ python -m venv venv
+   - $ venv\Scripts\activate
 3. Instale as dependências:
-   $ pip install -r requirements.txt
+   - $ pip install -r requirements.txt
 4. Configure as variáveis de ambiente no arquivo .env com as credenciais do Supabase (mais informações ler a documentação):
-   $ SUPABASE_URL=https://seu-supabase-url.supabase.co
-   $ SUPABASE_KEY=sua-chave-supabase
+   - $ SUPABASE_URL = https://seu-supabase-url.supabase.co
+   - $ SUPABASE_KEY = sua-chave-supabase
 5. Execute a aplicação:
-   $ streamlit run nome_do_arquivo.py
+   - $ streamlit run nome_do_arquivo.py
 
 Substitua `nome_do_arquivo.py` pelo nome do seu script principal.
 
