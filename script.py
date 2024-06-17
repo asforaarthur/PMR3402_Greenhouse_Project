@@ -26,6 +26,8 @@ st.write("### Insira os detalhes da planta e escolha o tipo de gráfico:")
 location = st.text_input("Nome da Planta:", "")
 min_temp = st.number_input("Temperatura Mínima Suportada (°C)", value=10)
 max_temp = st.number_input("Temperatura Máxima Suportada (°C)", value=30)
+min_humidity = st.number_input("Umidade Mínima Suportada (%)", value=30)
+max_humidity = st.number_input("Umidade Máxima Suportada (%)", value=70)
 graph = st.selectbox("Selecione o Tipo de Gráfico:", ('Gráfico de Barras', 'Gráfico de Linhas'))
 
 def fetch_data():
@@ -34,10 +36,14 @@ def fetch_data():
     return response.data
 
 def process_data(data):
-    """Processar dados para análise."""
+    """Processar dados para análise, filtrando dados errôneos."""
     df = pd.DataFrame(data)
     df['created_at'] = pd.to_datetime(df['created_at'])  # Converter para datetime
     df['date'] = df['created_at'].dt.date
+    
+    # Filtrar dados errôneos
+    df = df[(df['temperature'] >= 10) & (df['humidity'] >= 30)]
+    
     daily_data = df.groupby('date').agg({
         'temperature': 'mean',
         'humidity': 'mean',
@@ -45,47 +51,74 @@ def process_data(data):
     }).reset_index()
     return daily_data
 
-def init_plot():
+def init_plot(title):
     """Inicializar o gráfico e rotular eixos."""
     plt.style.use('ggplot')
     plt.figure('Monitoramento de Plantas')
     plt.xlabel('Dia')
-    plt.ylabel('Temperatura (°C)')
-    plt.title(f"Previsão Semanal - {location}")
+    plt.ylabel('Valor')
+    plt.title(title)
     plt.xticks(rotation=45)
+
+def plot_bars(daily_data, value_column, min_value, max_value, y_label, title):
+    """Plotar gráfico de barras."""
+    days = pd.to_datetime(daily_data['date'])  # Converter para Timestamp
+    values = daily_data[value_column]
+    
+    fig, ax = plt.subplots()
+    bar_width = 0.35
+    opacity = 0.8
+    
+    bar_x = ax.bar(days - pd.Timedelta(days=0.25), values, bar_width, alpha=opacity, color='#5cb85c', label='Min')
+    bar_y = ax.bar(days + pd.Timedelta(days=0.25), values, bar_width, alpha=opacity, color='#ff5349', label='Max')
+    
+    ax.set_xlabel('Dia')
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+    ax.legend()
+    
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    st.pyplot(fig)
+    
+    return bar_x, bar_y
 
 def plot_temperature(daily_data):
     """Plotar gráfico de temperatura."""
     days = pd.to_datetime(daily_data['date'])  # Converter para Timestamp
-    temp_min = daily_data['temperature'].min()  # Temperatura mínima diária
-    temp_max = daily_data['temperature'].max()  # Temperatura máxima diária
     
     if graph == 'Gráfico de Barras':
-        fig, ax = plt.subplots()
-        bar_width = 0.35
-        opacity = 0.8
-        
-        bar_x = ax.bar(days - pd.Timedelta(days=0.25), temp_min, bar_width, alpha=opacity, color='#5cb85c', label='Min')
-        bar_y = ax.bar(days + pd.Timedelta(days=0.25), temp_max, bar_width, alpha=opacity, color='#ff5349', label='Max')
-        
-        ax.set_xlabel('Dia')
-        ax.set_ylabel('Temperatura (°C)')
-        ax.set_title(f'Previsão Semanal - {location}')
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-        ax.legend()
-        
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        st.pyplot(fig)
-        
-        return bar_x, bar_y
+        plot_bars(daily_data, 'temperature', min_temp, max_temp, 'Temperatura (°C)', f'Previsão Semanal - {location} - Temperatura')
     
     elif graph == 'Gráfico de Linhas':
-        plt.plot(days, daily_data['temperature'], label='Temperatura', color='#42bff4', marker='o')
-        plt.title(f'Previsão Semanal - {location}')
+        plt.plot(days, daily_data['temperature'], label='Temperatura Média', color='#42bff4', marker='o')
+        plt.title(f'Previsão Semanal - {location} - Temperatura')
+        plt.xlabel('Dia')
+        plt.ylabel('Temperatura (°C)')
         plt.legend(fontsize='x-small')
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+        plt.xticks(rotation=45)
         st.set_option('deprecation.showPyplotGlobalUse', False)
-        st.pyplot(plt.show())
+        st.pyplot()
+
+def plot_humidity(daily_data):
+    """Plotar gráfico de umidade."""
+    days = pd.to_datetime(daily_data['date'])  # Converter para Timestamp
+    
+    if graph == 'Gráfico de Barras':
+        plot_bars(daily_data, 'humidity', min_humidity, max_humidity, 'Umidade (%)', f'Previsão Semanal - {location} - Umidade')
+    
+    elif graph == 'Gráfico de Linhas':
+        plt.plot(days, daily_data['humidity'], label='Umidade Média', color='#ffb347', marker='o')
+        plt.title(f'Previsão Semanal - {location} - Umidade')
+        plt.xlabel('Dia')
+        plt.ylabel('Umidade (%)')
+        plt.legend(fontsize='x-small')
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+        plt.xticks(rotation=45)
+        st.set_option('deprecation.showPyplotGlobalUse', False)
+        st.pyplot()
 
 def label_xaxis():
     """Rotular eixo X no formato 'mm/dd'."""
@@ -103,6 +136,18 @@ def show_temp_alerts(daily_data):
         else:
             st.success(f'Temperatura adequada em {date}: {temp:.2f}°C')
 
+def show_humidity_alerts(daily_data):
+    """Mostrar alertas de umidade."""
+    for index, row in daily_data.iterrows():
+        humidity = row['humidity']
+        date = row['date']
+        if humidity < min_humidity:
+            st.warning(f'Umidade muito baixa em {date}: {humidity:.2f}%')
+        elif humidity > max_humidity:
+            st.error(f'Umidade muito alta em {date}: {humidity:.2f}%')
+        else:
+            st.success(f'Umidade adequada em {date}: {humidity:.2f}%')
+
 if st.button('Buscar Dados'):
     if location == '':
         st.warning('Por favor, insira o nome da planta!')
@@ -115,10 +160,11 @@ if st.button('Buscar Dados'):
                 st.write("Grandezas médias diárias para os dias.")
                 st.write(daily_data)
 
-                init_plot()
                 plot_temperature(daily_data)
+                plot_humidity(daily_data)
                 label_xaxis()
                 show_temp_alerts(daily_data)
+                show_humidity_alerts(daily_data)
             else:
                 st.error('Nenhum dado encontrado.')
         except Exception as e:
