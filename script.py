@@ -26,9 +26,13 @@ st.write("### Insira os detalhes da planta e escolha o tipo de gráfico:")
 location = st.text_input("Nome da Planta:", "")
 min_temp = st.number_input("Temperatura Mínima Suportada (°C)", value=10)
 max_temp = st.number_input("Temperatura Máxima Suportada (°C)", value=30)
-min_humidity = st.number_input("Umidade Mínima Suportada (%)", value=30)
-max_humidity = st.number_input("Umidade Máxima Suportada (%)", value=70)
+min_humidity_ar = st.number_input("Umidade do Mínima Suportada (%)", value=30)
+max_humidity_ar = st.number_input("Umidade do Máxima Suportada (%)", value=70)
 graph = st.selectbox("Selecione o Tipo de Gráfico:", ('Gráfico de Barras', 'Gráfico de Linhas'))
+
+# Seleção do intervalo de datas
+start_date = st.date_input("Data de Início", value=pd.to_datetime("2023-01-01"))
+end_date = st.date_input("Data de Fim", value=pd.to_datetime("2023-12-31"))
 
 def fetch_data():
     """Buscar dados do Supabase."""
@@ -42,13 +46,18 @@ def process_data(data):
     df['date'] = df['created_at'].dt.date
     
     # Filtrar dados errôneos
-    df = df[(df['temperature'] >= 10) & (df['humidity'] >= 30)]
+    df = df[(df['temperature'] >= min_temp) & (df['temperature'] <= max_temp) & (df['humidity'] >= min_humidity_ar) & (df['humidity'] <= max_humidity_ar)]
+    
+    # Filtrar valores de umidade do solo e do ar
+    df['moisture'] = df['moisture'] / 100  # Converter a umidade do solo para a mesma escala que a umidade do ar
+    df = df[(df['moisture'] >= 30) & (df['moisture'] <= max_humidity_ar)]
     
     daily_data = df.groupby('date').agg({
         'temperature': 'mean',
         'humidity': 'mean',
         'moisture': 'mean'
     }).reset_index()
+    
     return daily_data
 
 def init_plot(title):
@@ -102,18 +111,36 @@ def plot_temperature(daily_data):
         st.set_option('deprecation.showPyplotGlobalUse', False)
         st.pyplot()
 
-def plot_humidity(daily_data):
-    """Plotar gráfico de umidade."""
+def plot_humidity_ar(daily_data):
+    """Plotar gráfico de umidade do ar."""
     days = pd.to_datetime(daily_data['date'])  # Converter para Timestamp
     
     if graph == 'Gráfico de Barras':
-        plot_bars(daily_data, 'humidity', min_humidity, max_humidity, 'Umidade (%)', f'Previsão Semanal - {location} - Umidade')
+        plot_bars(daily_data, 'humidity', min_humidity_ar, max_humidity_ar, 'Umidade do Ar (%)', f'Previsão Semanal - {location} - Umidade do Ar')
     
     elif graph == 'Gráfico de Linhas':
-        plt.plot(days, daily_data['humidity'], label='Umidade Média', color='#ffb347', marker='o')
-        plt.title(f'Previsão Semanal - {location} - Umidade')
+        plt.plot(days, daily_data['humidity'], label='Umidade do Ar Média', color='#ffb347', marker='o')
+        plt.title(f'Previsão Semanal - {location} - Umidade do Ar')
         plt.xlabel('Dia')
-        plt.ylabel('Umidade (%)')
+        plt.ylabel('Umidade do Ar (%)')
+        plt.legend(fontsize='x-small')
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+        plt.xticks(rotation=45)
+        st.set_option('deprecation.showPyplotGlobalUse', False)
+        st.pyplot()
+
+def plot_moisture(daily_data):
+    """Plotar gráfico de umidade do solo."""
+    days = pd.to_datetime(daily_data['date'])  # Converter para Timestamp
+    
+    if graph == 'Gráfico de Barras':
+        plot_bars(daily_data, 'moisture', 0.3, max_humidity_ar / 100, 'Umidade do Solo (%)', f'Previsão Semanal - {location} - Umidade do Solo')
+    
+    elif graph == 'Gráfico de Linhas':
+        plt.plot(days, daily_data['moisture'], label='Umidade do Solo Média', color='#ff6347', marker='o')
+        plt.title(f'Previsão Semanal - {location} - Umidade do Solo')
+        plt.xlabel('Dia')
+        plt.ylabel('Umidade do Solo (%)')
         plt.legend(fontsize='x-small')
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
         plt.xticks(rotation=45)
@@ -128,7 +155,7 @@ def show_temp_alerts(daily_data):
     """Mostrar alertas de temperatura."""
     for index, row in daily_data.iterrows():
         temp = row['temperature']
-        date = row['date']
+        date = row['date'].strftime('%Y-%m-%d')  # Formatando a data para 'YYYY-MM-DD'
         if temp < min_temp:
             st.warning(f'Temperatura muito baixa em {date}: {temp:.2f}°C')
         elif temp > max_temp:
@@ -136,35 +163,61 @@ def show_temp_alerts(daily_data):
         else:
             st.success(f'Temperatura adequada em {date}: {temp:.2f}°C')
 
-def show_humidity_alerts(daily_data):
-    """Mostrar alertas de umidade."""
+def show_humidity_ar_alerts(daily_data):
+    """Mostrar alertas de umidade do ar."""
     for index, row in daily_data.iterrows():
-        humidity = row['humidity']
-        date = row['date']
-        if humidity < min_humidity:
-            st.warning(f'Umidade muito baixa em {date}: {humidity:.2f}%')
-        elif humidity > max_humidity:
-            st.error(f'Umidade muito alta em {date}: {humidity:.2f}%')
+        humidity_ar = row['humidity']
+        date = row['date'].strftime('%Y-%m-%d')  # Formatando a data para 'YYYY-MM-DD'
+        if humidity_ar < min_humidity_ar:
+            st.warning(f'Umidade do ar muito baixa em {date}: {humidity_ar:.2f}%')
+        elif humidity_ar > max_humidity_ar:
+            st.error(f'Umidade do ar muito alta em {date}: {humidity_ar:.2f}%')
         else:
-            st.success(f'Umidade adequada em {date}: {humidity:.2f}%')
+            st.success(f'Umidade do ar adequada em {date}: {humidity_ar:.2f}%')
+
+def show_moisture_alerts(daily_data):
+    """Mostrar alertas de umidade do solo."""
+    for index, row in daily_data.iterrows():
+        moisture = row['moisture']
+        date = row['date'].strftime('%Y-%m-%d')  # Formatando a data para 'YYYY-MM-DD'
+        if moisture < 0.3:
+            st.warning(f'Umidade do solo muito baixa em {date}: {moisture:.2f}')
+        elif moisture > max_humidity_ar / 100:
+            st.error(f'Umidade do solo muito alta em {date}: {moisture:.2f}')
+        else:
+            st.success(f'Umidade do solo adequada em {date}: {moisture:.2f}')
 
 if st.button('Buscar Dados'):
     if location == '':
         st.warning('Por favor, insira o nome da planta!')
+    elif start_date > end_date:
+        st.error('Data de início não pode ser maior que a data de fim!')
     else:
         try:
             data = fetch_data()
             if data:
                 daily_data = process_data(data)
-                st.subheader('Dados Agregados Diários')
-                st.write("Grandezas médias diárias para os dias.")
-                st.write(daily_data)
+                
+                # Converter as datas do dataframe para o tipo correto
+                daily_data['date'] = pd.to_datetime(daily_data['date'])
+                
+                # Filtrar dados pelo intervalo de datas
+                daily_data = daily_data[(daily_data['date'] >= pd.to_datetime(start_date)) & (daily_data['date'] <= pd.to_datetime(end_date))]
 
-                plot_temperature(daily_data)
-                plot_humidity(daily_data)
-                label_xaxis()
-                show_temp_alerts(daily_data)
-                show_humidity_alerts(daily_data)
+                if daily_data.empty:
+                    st.error('Nenhum dado encontrado no intervalo de datas selecionado.')
+                else:
+                    st.subheader('Dados Agregados Diários')
+                    st.write("Grandezas médias diárias para os dias selecionados.")
+                    st.write(daily_data)
+
+                    plot_temperature(daily_data)
+                    plot_humidity_ar(daily_data)
+                    plot_moisture(daily_data)
+                    label_xaxis()
+                    show_temp_alerts(daily_data)
+                    show_humidity_ar_alerts(daily_data)
+                    show_moisture_alerts(daily_data)
             else:
                 st.error('Nenhum dado encontrado.')
         except Exception as e:
