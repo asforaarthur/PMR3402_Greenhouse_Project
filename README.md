@@ -1,72 +1,77 @@
-# PMR3402 - Monitoramento de Plantas
+# PMR3402 - GreenHouse Plant Monitoring Project
 
-Este projeto foi desenvolvido como parte da disciplina PMR3402 - Sistemas Embarcados (2024), para monitoramento da temperatura, umidade do ambiente e umidade do solo de plantas de pequeno porte utilizando o RTOS para valorizar o tempo de resposta dos sensores. A ESP32 conecta-se a uma Rede Wifi com conexão à internet e os dados coletados pelo sensor são enviados a uma database online (Supabase). Para exibir e tratar os dados, o grupo utilizou o Streamlit, um framework em Python que cria uma interface web.
+This project was developed as part of the course **PMR3402 - Embedded Systems (2024)** from the Polytechnic School of the University of São Paulo (POLI-USP), focusing on monitoring temperature, ambient humidity, and soil moisture of small plants. An **RTOS** was used to ensure responsive sensor readings. The **ESP32** connects to a Wi-Fi network with internet access, and the sensor data is sent to an online database (**Supabase**). For data display and processing, the group used **Streamlit**, a Python framework that creates a web interface.
 
-## Montagem do circuito
+## Circuit Assembly
 
-![alt text](<montagem.jpg>)
+![alt text](montagem.jpg)
 
-## Interface Web
+## Web Interface
 
-![alt text](interface2.png)
-
+![alt text](interface2.png)  
 ![alt text](interface1.png)
 
-## Funcionalidades
+## Features
 
-- **Inserção de Detalhes da Planta:** O usuário pode inserir o nome da planta, temperatura mínima e máxima suportadas, umidade mínima e máxima suportadas, e escolher entre gráficos de barras ou linhas.
-  
-- **Busca de Dados:** Ao pressionar o botão "Buscar Dados", a aplicação faz uma consulta ao banco de dados Supabase para obter os dados coletados da planta específica.
+- **Plant Details Input:** Users can input the plant name, supported minimum and maximum temperatures, supported humidity range, and select between bar or line charts.
+- **Data Retrieval:** When clicking the "Fetch Data" button, the application queries the Supabase database to retrieve data for the specified plant.
+- **Error Filtering:** Discards temperature readings below 10°C and humidity below 30% to avoid incorrect data.
+- **Aggregated Data Display:** After fetching, the data is processed to calculate daily average temperature, ambient humidity, and soil moisture.
+- **Interactive Charts:** Processed data is displayed in bar or line charts, as selected by the user. The charts show temperature and humidity variation over time.
+- **Temperature and Humidity Alerts:** The application displays alerts if collected values are outside the user-defined ideal range.
 
-- **Filtragem de Dados Errôneos:** Descarta dados de temperatura abaixo de 10°C e umidade abaixo de 30% para evitar leituras incorretas.
+## Technologies Used
 
-- **Visualização de Dados Agregados:** Após a busca, os dados são processados para calcular as grandezas médias diárias de temperatura, umidade e umidade do solo.
+- **Streamlit:** Open-source framework for building web apps easily using Python.
+- **Supabase:** Open-source platform offering PostgreSQL databases as a service, with APIs for data querying and manipulation.
+- **Matplotlib & Pandas:** Widely-used Python libraries for data visualization and data structure handling.
 
-- **Gráficos Interativos:** Os dados processados são exibidos em gráficos de barras ou linhas, conforme escolhido pelo usuário. Os gráficos mostram a variação da temperatura e umidade ao longo dos dias.
+## Prerequisites
 
-- **Alertas de Temperatura e Umidade:** A aplicação exibe alertas indicando se os valores coletados estão fora dos limites ideais definidos pelo usuário.
-
-## Tecnologias Utilizadas
-
-- **Streamlit:** Framework de código aberto para criar aplicativos da web de maneira simples e eficiente utilizando Python.
-
-- **Supabase:** Plataforma open-source que fornece bancos de dados PostgreSQL como serviço, com APIs para consultas e manipulação de dados.
-
-- **Matplotlib e Pandas:** Bibliotecas Python amplamente utilizadas para visualização de dados e manipulação de estruturas de dados, respectivamente.
-
-## Pré-Requisitos
-
-- Python 3.6 ou superior
-- Bibliotecas necessárias (instaladas via pip):
-  - streamlit
-  - matplotlib
-  - pandas
-  - supabase
+- Python 3.6 or higher
+- Required libraries (install via pip):
+  - streamlit  
+  - matplotlib  
+  - pandas  
+  - supabase  
   - python-dotenv
 
-## Como Executar
+## How to Run
 
-1. Clone o repositório para sua máquina local:
-   - $ sh
-   - $ git clone https://github.com/asforaarthur/pmr3402_projeto_planta.git
-   - $ cd monitoramento-plantas
-2. Crie e ative um ambiente virtual:
-   - $ python -m venv venv
-   - $ venv\Scripts\activate
-3. Instale as dependências:
-   - $ pip install -r requirements.txt
-4. Configure as variáveis de ambiente no arquivo .env com as credenciais do Supabase (mais informações ler a documentação):
-   - $ SUPABASE_URL = https://seu-supabase-url.supabase.co
-   - $ SUPABASE_KEY = sua-chave-supabase
-5. Execute a aplicação:
-   - $ streamlit run nome_do_arquivo.py
+1. Clone the repository to your local machine:
+   ```sh
+   git clone https://github.com/asforaarthur/PMR3402_Greenhouse_Project.git
+   cd monitoramento-plantas
+   ```
 
-Substitua `nome_do_arquivo.py` pelo nome do seu script principal.
+2. Create and activate a virtual environment:
+   ```sh
+   python -m venv venv
+   venv\Scripts\activate
+   ```
 
-## Autor
+3. Install the dependencies:
+   ```sh
+   pip install -r requirements.txt
+   ```
 
-- Grupo D
+4. Configure the environment variables in the `.env` file with your Supabase credentials (see documentation for more info):
+   ```
+   SUPABASE_URL = https://your-supabase-url.supabase.co  
+   SUPABASE_KEY = your-supabase-key
+   ```
 
-## Licença
+5. Run the application:
+   ```sh
+   streamlit run your_script_name.py
+   ```
 
-© 2024 - Todos os direitos reservados - Grupo D
+   Replace `your_script_name.py` with the name of your main Python script.
+
+## Author
+
+- Group D
+
+## License
+
+© 2024 - All rights reserved - Group D
